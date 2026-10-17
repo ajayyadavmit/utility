@@ -1,6 +1,7 @@
 # Utility
 
-A small collection of helper scripts for converting between images and PDF files.
+1. converting between images to PDF files.
+2. COnverting pdf to image file. 
 
 ## Contents
 
