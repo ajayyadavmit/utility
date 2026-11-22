@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Mouse-reactive Grid Background</title>
+    <style>
+      :root {
+        --bg: #f3f5f3;
+        --line: #dde2dd;
+        --fg: #1f2a24;
+        --muted: #6b756f;
+        --pill: #e2e9e3;
+        --panel: #f1f4f1;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #0f1311;
+          --line: #222a25;
+          --fg: #e6ece8;
+          --muted: #8a948e;
+          --pill: #1c2420;
+          --panel: #141a17;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f1311;
+        --line: #222a25;
+        --fg: #e6ece8;
+        --muted: #8a948e;
+        --pill: #1c2420;
+        --panel: #141a17;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0 0 6px;
+      }
+      .muted {
+        color: var(--muted);
+        margin: 0 0 18px;
+      }
+
+      /* colour controls */
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 0 0 14px;
+      }
+      .controls button {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 0;
+        cursor: pointer;
+        background: var(--c);
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        transition: transform 0.15s;
+      }
+      .controls button:hover {
+        transform: scale(1.15);
+      }
+      .controls button[aria-pressed="true"] {
+        outline-color: var(--fg);
+      }
+      .controls input[type="color"] {
+        width: 34px;
+        height: 28px;
+        border: 0;
+        padding: 0;
+        background: none;
+        cursor: pointer;
+      }
+
+      /* ===== the reusable area: put anything inside ===== */
+      .glow-area {
+        --glow: #1a9b3c;
+        --x: -999px;
+        --y: -999px;
+        position: relative;
+        height: 440px;
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+      }
+      .grid,
+      .grid::after {
+        position: absolute;
+        inset: 0;
+        background-size: 20px 20px;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      }
+      .grid::after {
+        content: "";
+        opacity: 0;
+        transition: opacity 0.25s;
+        background-image:
+          linear-gradient(var(--glow) 1px, transparent 1px),
+          linear-gradient(90deg, var(--glow) 1px, transparent 1px);
+        -webkit-mask-image: radial-gradient(
+          160px circle at var(--x) var(--y),
+          #000,
+          transparent 70%
+        );
+        mask-image: radial-gradient(
+          160px circle at var(--x) var(--y),
+          #000,
+          transparent 70%
+        );
+      }
+      .glow-area.on .grid::after {
+        opacity: 1;
+      }
+
+      .logo {
+        position: absolute;
+        left: 24px;
+        top: 24px;
+        width: 40px;
+        height: 40px;
+        display: grid;
+        grid-template-columns: 20px 20px;
+        cursor: pointer;
+      }
+      .logo i {
+        display: block;
+        transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+      }
+      .logo i:nth-child(1) {
+        background: var(--glow);
+      }
+      .logo i:nth-child(2) {
+        background: transparent;
+      }
+      .logo i:nth-child(3) {
+        background: #7fb2ff;
+      }
+      .logo i:nth-child(4) {
+        background: #dcd3f5;
+      }
+      .logo:hover i:nth-child(1) {
+        transform: translate(20px, 20px);
+      }
+      .logo:hover i:nth-child(3) {
+        transform: translate(0, -20px);
+      }
+      .logo:hover i:nth-child(4) {
+        transform: translate(-20px, 0);
+      }
+
+      .panel {
+        position: absolute;
+        left: min(120px, 10vw);
+        top: 84px;
+        width: min(320px, 80%);
+        height: 100%;
+        background: var(--panel);
+        border-radius: 14px 0 0 0;
+        border-left: 8px solid var(--glow);
+        padding: 20px 22px;
+        transition:
+          transform 0.15s ease-out,
+          border-color 0.2s;
+        will-change: transform;
+      }
+      nav {
+        position: relative;
+        margin-top: 22px;
+        display: flex;
+        flex-direction: column;
+      }
+      nav a {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 9px 8px;
+        border-radius: 8px;
+        color: var(--fg);
+        text-decoration: none;
+        font-size: 17px;
+        overflow: hidden;
+      }
+      nav a span {
+        width: 24px;
+        text-align: center;
+        color: var(--muted);
+        transition:
+          transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1),
+          color 0.2s;
+      }
+      nav a:hover span {
+        transform: rotate(-12deg) scale(1.25);
+        color: var(--glow);
+      }
+      nav a::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.2s;
+        background: radial-gradient(
+          90px circle at var(--mx, 50%) 50%,
+          color-mix(in srgb, var(--glow) 24%, transparent),
+          transparent
+        );
+      }
+      nav a:hover::after {
+        opacity: 1;
+      }
+      .pill {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        border-radius: 8px;
+        background: var(--pill);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          transform 0.28s cubic-bezier(0.3, 1.2, 0.4, 1),
+          height 0.2s,
+          opacity 0.2s;
+      }
+      h6 {
+        margin: 30px 0 0;
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 15px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>GLossy Grid Background Color Sensitive</h1>
+      <p class="muted">
+        The effect only runs inside the box below. This text and the rest of the
+        page stay normal.
+      </p>
+
+      <div class="controls" id="colors" data-target="demo">
+        <button
+          style="--c: #1a9b3c"
+          data-color="#1a9b3c"
+          aria-label="Green"
+          aria-pressed="true"
+        ></button>
+        <button
+          style="--c: #e5484d"
+          data-color="#e5484d"
+          aria-label="Red"
+          aria-pressed="false"
+        ></button>
+        <button
+          style="--c: #3b82f6"
+          data-color="#3b82f6"
+          aria-label="Blue"
+          aria-pressed="false"
+        ></button>
+        <button
+          style="--c: #8b5cf6"
+          data-color="#8b5cf6"
+          aria-label="Purple"
+          aria-pressed="false"
+        ></button>
+        <button
+          style="--c: #f59e0b"
+          data-color="#f59e0b"
+          aria-label="Orange"
+          aria-pressed="false"
+        ></button>
+        <input type="color" value="#1a9b3c" aria-label="Custom colour" />
+      </div>
+
+      <section class="glow-area" id="demo" data-glow="#1a9b3c">
+        <div class="grid"></div>
+        <div class="logo" aria-label="Logo"><i></i><i></i><i></i><i></i></div>
+        <aside class="panel">
+          <nav>
+            <div class="pill"></div>
+            <a href="#"><span>⌂</span>Home</a>
+            <a href="#"><span>⑂</span>Pull requests</a>
+            <a href="#"><span>◎</span>Issues</a>
+            <a href="#"><span>◷</span>Automations</a>
+            <a href="#"><span>▦</span>Customize</a>
+            <a href="#"><span>⋯</span>More</a>
+          </nav>
+          <h6>Sessions</h6>
+        </aside>
+      </section>
+
+      <p class="muted" style="margin-top: 18px">
+        Content below the area: no spotlight here. Add more areas by repeating
+        the section with a different <code>data-glow</code> colour.
+      </p>
+    </main>
+
+    <script>
+      // ===== reusable: call once per area =====
+      function initGlowArea(area) {
+        if (area.dataset.glow)
+          area.style.setProperty("--glow", area.dataset.glow);
+
+        // spotlight position is measured relative to THIS area only
+        area.addEventListener("pointermove", (e) => {
+          const r = area.getBoundingClientRect();
+          area.style.setProperty("--x", e.clientX - r.left + "px");
+          area.style.setProperty("--y", e.clientY - r.top + "px");
+          area.classList.add("on");
+        });
+        area.addEventListener("pointerleave", () =>
+          area.classList.remove("on"),
+        );
+
+        // sliding pill + glow inside each nav link
+        const nav = area.querySelector("nav"),
+          pill = area.querySelector(".pill"),
+          panel = area.querySelector(".panel");
+        if (nav) {
+          nav.querySelectorAll("a").forEach((a) => {
+            a.addEventListener("pointerenter", () => {
+              pill.style.opacity = 1;
+              pill.style.height = a.offsetHeight + "px";
+              pill.style.transform = `translateY(${a.offsetTop}px)`;
+            });
+            a.addEventListener("pointermove", (e) =>
+              a.style.setProperty(
+                "--mx",
+                e.clientX - a.getBoundingClientRect().left + "px",
+              ),
+            );
+          });
+          nav.addEventListener("pointerleave", () => (pill.style.opacity = 0));
+        }
+        // subtle tilt
+        if (panel) {
+          panel.addEventListener("pointermove", (e) => {
+            const r = panel.getBoundingClientRect();
+            const px = (e.clientX - r.left) / r.width - 0.5,
+              py = (e.clientY - r.top) / 400 - 0.5;
+            panel.style.transform = `perspective(900px) rotateY(${px * 4}deg) rotateX(${-py * 3}deg)`;
+          });
+          panel.addEventListener(
+            "pointerleave",
+            () => (panel.style.transform = ""),
+          );
+        }
+      }
+      document.querySelectorAll(".glow-area").forEach(initGlowArea);
+
+      // ===== colour options =====
+      const controls = document.getElementById("colors");
+      const target = document.getElementById(controls.dataset.target);
+      const picker = controls.querySelector("input[type=color]");
+      function setColor(c) {
+        target.style.setProperty("--glow", c);
+        controls
+          .querySelectorAll("button")
+          .forEach((b) =>
+            b.setAttribute("aria-pressed", b.dataset.color === c),
+          );
+      }
+      controls.querySelectorAll("button").forEach((b) =>
+        b.addEventListener("click", () => {
+          setColor(b.dataset.color);
+          picker.value = b.dataset.color;
+        }),
+      );
+      picker.addEventListener("input", () => setColor(picker.value));
+    </script>
+  </body>
+</html>
